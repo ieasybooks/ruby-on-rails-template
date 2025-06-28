@@ -1,0 +1,167 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  scan_ruby:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.4.4
+          bundler-cache: true
+
+      - name: Scan for common Rails security vulnerabilities using static analysis
+        run: bin/brakeman --no-pager
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.1.0
+          cache: "yarn"
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.4.4
+          bundler-cache: true
+
+      - name: Install JS dependencies
+        run: yarn install
+
+      - name: Run Rubocop
+        run: bin/rubocop -f github
+
+      - name: Run Prettier
+        run: npx prettier ./app/javascript/ --check
+
+  i18n-tasks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.4.4
+          bundler-cache: true
+
+      - name: Run i18n-tasks check
+        run: bin/i18n-tasks health
+
+  active_record_doctor:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17.5
+        ports:
+          - "5433:5432"
+        env:
+          POSTGRES_USER: {app_name}
+          POSTGRES_PASSWORD: {app_name}
+          POSTGRES_DB: {app_name}_development
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install libpq-dev
+        run: sudo apt-get -yqq install libpq-dev
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.4.4
+          bundler-cache: true
+
+      - name: Create database
+        run: bin/rails db:create
+
+      - name: Run database migrations
+        run: bin/rails db:migrate
+
+      - name: Run Active Record Doctor
+        run: bundle exec rake active_record_doctor
+
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17.5
+        ports:
+          - "5433:5432"
+        env:
+          POSTGRES_USER: {app_name}
+          POSTGRES_PASSWORD: {app_name}
+          POSTGRES_DB: {app_name}_test
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+      meilisearch:
+        image: getmeili/meilisearch:v1.15.2
+        ports:
+          - "7701:7700"
+
+      redis:
+        image: valkey/valkey:8.1
+        ports:
+          - "6380:6379"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install libpq-dev
+        run: sudo apt-get -yqq install libpq-dev
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.1.0
+          cache: 'yarn'
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.4.4
+          bundler-cache: true
+
+      - name: Install JS dependencies
+        run: yarn install
+
+      - name: Build JS/CSS assets
+        run: |
+          yarn build
+          yarn run build:css
+
+      - name: Create database
+        run: bin/rails db:create
+
+      - name: Run database migrations
+        run: bin/rails db:migrate
+
+      - name: Run tests
+        run: bin/rspec
+
+      - uses: joshmfrankel/simplecov-check-action@main
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          minimum_suite_coverage: 100
+          minimum_file_coverage: 100

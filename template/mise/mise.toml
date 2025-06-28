@@ -1,0 +1,57 @@
+[env]
+PROJECT_NAME = "{{ config_root | basename }}"
+
+[tools]
+ruby = "3.4.4"
+node = "24.1.0"
+yarn = "4.9.1"
+gh = "latest"
+
+[tasks."docker:start"]
+description = "Start Docker services using docker-compose"
+run = "docker compose -f dev-docker-compose.yml up -d"
+
+[tasks."docker:stop"]
+description = "Stop Docker services using docker-compose"
+run = "docker compose -f dev-docker-compose.yml down"
+
+[tasks."deps:js"]
+description = "Install JavaScript dependencies"
+run = "yarn install"
+
+[tasks."deps:ruby"]
+description = "Install Ruby gems"
+run = "bundle install"
+
+[tasks."db:prepare"]
+description = "Prepare database (create and migrate)"
+run = "bundle exec rails db:create db:migrate"
+
+[tasks.lint]
+description = "Run linters"
+run = "bundle exec rubocop -a && yarn format:js"
+
+[tasks.dev]
+description = "Start development environment"
+run = '''
+#!/bin/bash
+set -e
+
+mise run docker:start
+mise run deps:js
+mise run deps:ruby
+mise run db:prepare
+
+cleanup() {
+  mise docker:stop
+
+  exit 0
+}
+
+# Set up trap to call cleanup on SIGINT (Ctrl+C) and SIGTERM
+trap cleanup SIGINT SIGTERM
+
+./bin/dev
+
+cleanup
+'''

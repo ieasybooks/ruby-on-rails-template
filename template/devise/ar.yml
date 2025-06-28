@@ -1,0 +1,15 @@
+---
+ar:
+  devise:
+    registrations:
+      edit:
+        cancel_account: إلغاء الحساب
+        leave_blank_if_you_don_t_want_to_change_it: اتركه فارغاً إذا كنت لا ترغب في تغيير كلمة المرور
+        title: إعدادات الحساب
+        unhappy: سيُحذف حسابك بشكل نهائي ولن تستطيع الوصول إلى أي بيانات مُتعلّقة به.
+        we_need_your_current_password_to_confirm_your_changes: نحتاج إلى كلمة مرورك الحالية لتأكيد التغييرات التي قمت بها
+    sessions:
+      new:
+        dont_have_an_account_yet: ليس لديك حساب بعد؟
+        forgot_your_password: نسيت كلمة مرورك؟
+        sign_up_now: سجّل الآن

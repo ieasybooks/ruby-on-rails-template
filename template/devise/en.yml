@@ -1,0 +1,15 @@
+---
+en:
+  devise:
+    registrations:
+      edit:
+        cancel_account: Cancel account
+        leave_blank_if_you_don_t_want_to_change_it: leave blank if you don't want to change the password
+        title: Account settings
+        unhappy: Your account will be permanently deleted and you will not be able to access any data associated with it.
+        we_need_your_current_password_to_confirm_your_changes: we need your current password to confirm your changes
+    sessions:
+      new:
+        dont_have_an_account_yet: Don't have an account yet?
+        forgot_your_password: Forgot your password?
+        sign_up_now: Sign up now
